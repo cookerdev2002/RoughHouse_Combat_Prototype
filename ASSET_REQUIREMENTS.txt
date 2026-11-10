@@ -1,5 +1,9 @@
 ROUGH HOUSE V5: ACTUAL HUMANOID ASSETS REQUIRED
 
+Both fighters (SOHO and SLICK) must use MALE humanoid character models.
+Confirm male body shape and identity visually when selecting licensed FBX assets.
+The software cannot reliably determine a model's gender from an FBX file name or rig.
+
 This ZIP includes all V5 Unity source changes but NO third-party human FBX models
 or motion-capture files. You must source and upload the real assets before building.
 

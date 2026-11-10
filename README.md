@@ -44,3 +44,7 @@ These are stylized/low-poly human assets and will not look photoreal. For photor
 - Character collision uses CharacterController + scripted separation, not full ragdoll simulation.
 - Knockdown and get-up currently play clips; advanced synchronized fight animation needs authoring and careful timing.
 - The editor has not been executed in this environment. Unity compilation and actual runtime must be verified on the next cloud build.
+
+
+## V5.1 compilation fix
+The Unity 6 built-in Animation module (`com.unity.modules.animation`: `1.0.0`) has been explicitly enabled in `Packages/manifest.json` to resolve CS1069 for `UnityEngine.Animator`. Both Soho and Slick are intended to be male humanoid models; actual licensed character FBX files are not bundled. Cloud builds still require both imported male character assets and the 12 animation FBX files described in ASSET_REQUIREMENTS.txt.
