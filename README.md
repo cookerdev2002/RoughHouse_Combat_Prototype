@@ -26,3 +26,6 @@ This Unity 6.3 source is intended for the existing Windows Cloud Build pipeline.
 ## Important limitations
 
 This is an intermediate playable prototype intended to replace earlier broken or asset-blocked builds, **not a client-ready realistic fighting game**. The user must test the generated Windows executable; the source was inspected and packaged but not compiled or played in Unity here. The implementation intentionally uses two visible male-styled characters with more human proportion and authored fight poses, not the previous sphere-stick fighters, but low-complexity meshes remain visible. Ground contact is enforced by a planar mover and spacing solver; gameplay does not have robust rigidbody dynamics, animation warping, IK foot placement or motion capture.
+
+## V6.1 module correction
+Explicitly enables Unity built-in Audio, IMGUI and legacy Input modules for the camera listener, GUI overlay and keyboard controls. Compiling in Unity Cloud and runtime validation are still pending.

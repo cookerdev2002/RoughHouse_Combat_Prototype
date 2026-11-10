@@ -1,0 +1,13 @@
+RoughHouse V6.1 -- Unity Cloud module fixes
+
+Latest compiler failure: CS1069 UnityEngine.AudioListener forwarded to UnityEngine.AudioModule.
+
+Changes in Packages/manifest.json:
+- Added com.unity.modules.audio = 1.0.0 (AudioListener)
+- Added com.unity.modules.imgui = 1.0.0 (GUIStyle, GUI.Box, GUI.Label, OnGUI)
+- Added com.unity.modules.inputlegacy = 1.0.0 (Input.GetKeyDown, Input.GetAxisRaw)
+- Retained Animation and Physics built-in modules.
+
+These are source/configuration fixes, not a verified clean Unity compile.
+Before the next cloud build, replace matching files in the repository, remove obsolete V5 editor scripts (RoughHouseCloudAssets.cs, RoughHouseHumanSetup.cs) if still present, commit to master and push.
+After build succeeds, play-test both fighting clips and inspect Player.log if there is a runtime error.
