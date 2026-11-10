@@ -223,7 +223,8 @@ public class RoughHousePrototype : MonoBehaviour
         var mr = g.GetComponent<MeshRenderer>();
         mr.material = new Material(Shader.Find("Standard"));
         mr.material.color = color;
-        Destroy(g.GetComponent<Collider>());
+        // Collider components are unnecessary for the visual-only prototype.
+        // Avoid a hard PhysicsModule dependency in Unity Cloud builds.
         return g;
     }
 
@@ -305,13 +306,13 @@ public class Fighter : MonoBehaviour
         Ball(torso,"Jacket torso",new Vector3(0,.32f,0),new Vector3(.46f,.65f,.29f),jacket);
         Ball(torso,"Collar",new Vector3(0,.66f,0),new Vector3(.23f,.15f,.23f),new Color(.06f,.09f,.13f));
         head = NewJoint(torso,"Head Pivot",new Vector3(0,.79f,0));
-        Ball(head,"Face",new Vector3(0,.18f,0),new Vector3(.24f,.31f,.24f),slick? new Color(.69f,.40f,.28f) : new Color(.56f,.32f,.23f));
-        Ball(head,"Hair",new Vector3(0,.39f,-.025f),new Vector3(.26f,.105f,.25f),slick ? new Color(.16f,.09f,.07f) : new Color(.07f,.07f,.09f));
+        Ball(head,"Face",new Vector3(0,.18f,0),new Vector3(.24f,.31f,.24f),fancy? new Color(.69f,.40f,.28f) : new Color(.56f,.32f,.23f));
+        Ball(head,"Hair",new Vector3(0,.39f,-.025f),new Vector3(.26f,.105f,.25f),fancy ? new Color(.16f,.09f,.07f) : new Color(.07f,.07f,.09f));
         // Faces are oriented toward +Z.
         Ball(head,"Left eye",new Vector3(-.095f,.20f,.215f),new Vector3(.028f,.025f,.012f),Color.black);
         Ball(head,"Right eye",new Vector3(.095f,.20f,.215f),new Vector3(.028f,.025f,.012f),Color.black);
         Ball(head,"Nose",new Vector3(0,.125f,.245f),new Vector3(.045f,.05f,.05f),new Color(.45f,.27f,.21f));
-        if (slick) // Flashier silhouette, swept hair and shoulder accents.
+        if (fancy) // Flashier silhouette, swept hair and shoulder accents.
         {
             Box(torso,"Right jacket stripe",new Vector3(.29f,.29f,.10f),new Vector3(.06f,.47f,.04f),new Color(.92f,.73f,.30f));
             Box(torso,"Left jacket stripe",new Vector3(-.29f,.29f,.10f),new Vector3(.06f,.47f,.04f),new Color(.92f,.73f,.30f));
@@ -319,14 +320,14 @@ public class Fighter : MonoBehaviour
         }
         leftArm = NewJoint(torso,"Left Shoulder",new Vector3(-.47f,.53f,0));
         rightArm = NewJoint(torso,"Right Shoulder",new Vector3(.47f,.53f,0));
-        BuildArm(leftArm, jacket, slick, "Left");
-        BuildArm(rightArm,jacket,slick,"Right");
+        BuildArm(leftArm, jacket, fancy, "Left");
+        BuildArm(rightArm,jacket,fancy,"Right");
         leftElbow = leftArm.Find("Left Elbow");
         rightElbow = rightArm.Find("Right Elbow");
         leftLeg = NewJoint(pelvis,"Left Hip",new Vector3(-.21f,-.10f,0));
         rightLeg = NewJoint(pelvis,"Right Hip",new Vector3(.21f,-.10f,0));
-        BuildLeg(leftLeg,pants,"Left",slick);
-        BuildLeg(rightLeg,pants,"Right",slick);
+        BuildLeg(leftLeg,pants,"Left",fancy);
+        BuildLeg(rightLeg,pants,"Right",fancy);
         // Name badge is an independent 3D text object for simple identification.
         GameObject badge=new GameObject("Label");
         badge.transform.SetParent(modelRoot,false);
@@ -336,7 +337,7 @@ public class Fighter : MonoBehaviour
         text.anchor=TextAnchor.MiddleCenter;
         text.characterSize=.13f;
         text.fontSize=50;
-        text.color=slick ? new Color(.94f,.69f,1f) : new Color(.55f,.95f,1f);
+        text.color=fancy ? new Color(.94f,.69f,1f) : new Color(.55f,.95f,1f);
         badge.transform.localRotation=Quaternion.Euler(0,180,0); // labels face camera from rear camera view
     }
     private static Transform NewJoint(Transform parent, string name, Vector3 localPosition)
@@ -356,7 +357,8 @@ public class Fighter : MonoBehaviour
         MeshRenderer renderer=g.GetComponent<MeshRenderer>();
         renderer.material=new Material(Shader.Find("Standard"));
         renderer.material.color=color;
-        Destroy(g.GetComponent<Collider>());
+        // Collider components are unnecessary for the visual-only prototype.
+        // Avoid a hard PhysicsModule dependency in Unity Cloud builds.
         return g;
     }
     private static void Box(Transform p,string name,Vector3 pos,Vector3 scale,Color color)

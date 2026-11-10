@@ -1,11 +1,24 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 [InitializeOnLoad]
-public static class RoughHouseSceneSetup
+public class RoughHouseSceneSetup : IPreprocessBuildWithReport
 {
+    // Ensure a valid build scene even if delayed editor initialization does not run.
+    public int callbackOrder { get { return -1000; } }
+    public void OnPreprocessBuild(BuildReport report)
+    {
+        string destination = "Assets/RoughHouse/Scenes/Combat_Test_Arena.unity";
+        if (System.IO.File.Exists(destination))
+            EnsureBuildSettings(destination);
+        else
+            CreateScene(destination, false);
+    }
+
     // Cloud builders cannot click the RoughHouse setup menu. Generate the demo
     // scene automatically on first editor import, then add it to build settings.
     static RoughHouseSceneSetup()
