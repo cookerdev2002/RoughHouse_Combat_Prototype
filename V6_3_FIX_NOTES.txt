@@ -1,0 +1,18 @@
+ROUGH HOUSE V6.3 - CLEAN BUILD / REMOVE OBSOLETE V5 PREBUILD CHECKS
+
+Confirmed build failure:
+  RoughHouseCloudAssets.cs (V5) rejects build unless Soho.fbx / Slick.fbx exist.
+The V6 procedural demo is self-contained and does not need those files.
+
+IMPORTANT: Overlaying a ZIP on your previous repo DOES NOT REMOVE old files.
+Delete these paths from the repository AND COMMIT THE DELETIONS:
+  Assets/RoughHouse/Editor/RoughHouseCloudAssets.cs
+  Assets/RoughHouse/Editor/RoughHouseCloudAssets.cs.meta
+  Assets/RoughHouse/Editor/RoughHouseHumanSetup.cs
+  Assets/RoughHouse/Editor/RoughHouseHumanSetup.cs.meta
+
+The included APPLY_CLEAN_V6_3.cmd automates the copy and deletion on Windows.
+It prompts you to select the existing local GitHub repository folder.
+
+This project is a procedural humanoid combat proof-of-concept, NOT realistic motion capture.
+Cloud build and player runtime are not tested in this authoring environment.
