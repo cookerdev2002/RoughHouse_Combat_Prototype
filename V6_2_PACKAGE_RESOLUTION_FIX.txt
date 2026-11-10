@@ -1,0 +1,4 @@
+RoughHouse V6.2
+Removed invalid com.unity.modules.inputlegacy from Packages/manifest.json. Unity legacy Input API is part of the Unity engine and does not need this package declaration.
+The valid audio, animation, imgui and physics built-in modules remain declared.
+Unverified in Unity Cloud: test a new build and inspect Full Log if package resolution still fails.
