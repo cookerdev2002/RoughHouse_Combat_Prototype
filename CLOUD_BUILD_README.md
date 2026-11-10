@@ -22,3 +22,7 @@ Startup runs Clip 1 automatically; **2** = Clip 2, **1** = restart Clip 1, **P**
 - The procedural character visuals and poses are **temporary placeholders**, not client-approved final character art.
 - **Not compiled or tested in Unity yet.** Cloud failures can arise from Unity API compatibility, input settings, package resolution, or scene generation. Review cloud build logs before client delivery.
 - The game is a prototype, not the completed commissioned combat game. Test Clip 1 and Clip 2 on a real Windows PC before claiming completion.
+
+
+## V3 cloud build correction
+The repository now includes `Assets/RoughHouse/Scenes/Combat_Test_Arena.unity` and `ProjectSettings/EditorBuildSettings.asset`. Commit **both** to GitHub. This avoids the previous `There were no scenes configured to build` failure caused by relying on automatic scene creation.

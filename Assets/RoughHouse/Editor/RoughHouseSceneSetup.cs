@@ -13,10 +13,9 @@ public class RoughHouseSceneSetup : IPreprocessBuildWithReport
     public void OnPreprocessBuild(BuildReport report)
     {
         string destination = "Assets/RoughHouse/Scenes/Combat_Test_Arena.unity";
-        if (System.IO.File.Exists(destination))
-            EnsureBuildSettings(destination);
-        else
-            CreateScene(destination, false);
+        if (!System.IO.File.Exists(destination))
+            throw new BuildFailedException("Missing committed combat scene: " + destination + ". Upload all v3 Assets and ProjectSettings files.");
+        EnsureBuildSettings(destination);
     }
 
     // Cloud builders cannot click the RoughHouse setup menu. Generate the demo
