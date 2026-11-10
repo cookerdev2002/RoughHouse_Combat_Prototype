@@ -1,5 +1,2 @@
-RoughHouse prototype delivery status
-
-DELIVERED: Unity C# source scaffold, procedural placeholder fighter rigs, stage generator, cinematic camera, Clip 1 and Clip 2 scripted action timelines, keyboard controls, setup instructions.
-NOT DELIVERED: Verified runnable Unity binary, final custom character meshes/animations, recorded MP4 clips, production-level collision and combat systems.
-VERIFICATION: Unity Editor is not installed in this execution environment; compilation and actual gameplay recording must be carried out in Unity on Windows 11.
+ROUGH HOUSE V6 — SELF-CONTAINED SOURCE PROJECT
+Source includes original, simplified male humanoids and authored procedural combat demonstrations. NO licensed rigged FBX, NO motion capture, NO realistic character art. No compile or runtime test performed here. Client-ready realism requires additional rigged models, mocap and testing.

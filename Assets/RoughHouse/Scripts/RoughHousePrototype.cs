@@ -2,343 +2,336 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-// RoughHouse V5: humanoid-asset based combat vertical-slice architecture.
-// NO generated stick figures. Supply genuine rigged character prefabs through the editor wizard.
+// ROUGH HOUSE V6: Self-contained, playable combat proof-of-concept.
+// Male humanoid geometry is authored in code; no third-party FBX is bundled.
+// All motions are procedural demonstrations, not motion capture.
 public sealed class RoughHousePrototype : MonoBehaviour
 {
-    private HumanoidFighter soho, slick;
-    private FightCamera cameraRig;
-    private Coroutine demo;
-    private bool ready, manual, paused;
-    private string title = "ROUGH HOUSE / HUMAN FIGHTERS";
-    private string caption = "Loading humanoid character assets...";
-    private GUIStyle heading, body, warning;
+    private RHFighter soho, slick;
+    private Camera fightCamera;
+    private Coroutine sequence;
+    private bool freePlay, paused;
+    private string status = "Setting up fighters";
+    private string sceneName = "CLIP 1 / SOHO VS SLICK";
+    private float shake;
+    private GUIStyle titleStyle, textStyle;
+    private static Shader baseShader;
+    private static Material matCache;
 
     private void Start()
     {
         Application.targetFrameRate = 60;
-        MakeArena();
-        var a = Resources.Load<GameObject>("Fighters/Soho");
-        var b = Resources.Load<GameObject>("Fighters/Slick");
-        if (a == null || b == null)
-        {
-            caption = "HUMAN ASSETS MISSING: Use RoughHouse > Configure Human Fighters in Unity Editor.";
-            Debug.LogError("RoughHouse V5: missing Assets/Resources/Fighters/Soho.prefab or Slick.prefab. Import a rigged human and clips using the editor wizard before Cloud Build.");
-            return;
-        }
-        soho = HumanoidFighter.Spawn("SOHO", a, new Vector3(-1.18f, .05f, 0));
-        slick = HumanoidFighter.Spawn("SLICK", b, new Vector3(1.18f, .05f, 0));
-        if (!soho.Valid || !slick.Valid)
-        {
-            caption = "HUMANOID SETUP INVALID: Check imported Animator and animation controller.";
-            Debug.LogError("RoughHouse V5: character prefab must have an Animator with a generated controller, from Configure Human Fighters.");
-            return;
-        }
-        soho.Opponent = slick;
-        slick.Opponent = soho;
-        Camera c = Camera.main;
-        if (c == null)
-        {
-            GameObject obj = new GameObject("Fight camera"); obj.tag = "MainCamera"; c = obj.AddComponent<Camera>();
-        }
-        c.clearFlags = CameraClearFlags.SolidColor;
-        c.backgroundColor = new Color(.075f, .09f, .12f);
-        c.fieldOfView = 42f;
-        cameraRig = c.gameObject.AddComponent<FightCamera>();
-        cameraRig.SetTargets(soho.transform, slick.transform);
-        ready = true;
-        Debug.Log("RoughHouse V5: TWO HUMANOID fighters ready, collision controllers initialized.");
-        StartDemo(1);
+        Time.timeScale = 1f;
+        CreateArena();
+        soho = RHFighter.Create("SOHO", true, new Vector3(-1.05f, 0f, 0f));
+        slick = RHFighter.Create("SLICK", false, new Vector3(1.05f, 0f, 0f));
+        soho.enemy = slick; slick.enemy = soho;
+        fightCamera = Camera.main;
+        if (fightCamera == null) { GameObject o = new GameObject("RoughHouse Combat Camera"); o.tag="MainCamera"; fightCamera = o.AddComponent<Camera>(); }
+        fightCamera.clearFlags = CameraClearFlags.SolidColor;
+        fightCamera.backgroundColor = new Color(.055f,.066f,.083f);
+        fightCamera.fieldOfView = 42f;
+        fightCamera.nearClipPlane = .1f;
+        fightCamera.farClipPlane = 80f;
+        if (fightCamera.GetComponent<AudioListener>() == null) fightCamera.gameObject.AddComponent<AudioListener>();
+        Debug.Log("ROUGH HOUSE V6 READY: male humanoid fighters, procedural combat and collision spacing initialized.");
+        PlayDemo(1);
     }
     private void Update()
     {
-        if (!ready) return;
-        if (Input.GetKeyDown(KeyCode.Alpha1)) StartDemo(1);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) StartDemo(2);
-        if (Input.GetKeyDown(KeyCode.Space)) { paused = !paused; Time.timeScale = paused ? 0f : 1f; }
-        if (Input.GetKeyDown(KeyCode.P))
+        if (soho == null || slick == null) return;
+        if(Input.GetKeyDown(KeyCode.Alpha1)) PlayDemo(1);
+        if(Input.GetKeyDown(KeyCode.Alpha2)) PlayDemo(2);
+        if(Input.GetKeyDown(KeyCode.Space)) { paused=!paused; Time.timeScale=paused?0f:1f; }
+        if(Input.GetKeyDown(KeyCode.P))
         {
-            if (demo != null) StopCoroutine(demo);
-            demo = null; manual = true;
-            caption = "FREE PLAY: WASD movement, J jab, K cross, L hook, I uppercut, U kick, O block";
-            soho.Rest(); slick.Rest();
+            if(sequence!=null) StopCoroutine(sequence);
+            sequence=null; freePlay=true; Time.timeScale=1f; paused=false;
+            soho.ResetPose(); slick.ResetPose();
+            status="FREE PLAY: WASD move / J jab / K cross / L hook / I uppercut / U kick / O block";
+            sceneName="FREE PLAY / SOHO VS SLICK";
         }
-        if (manual && !paused)
+        if(freePlay)
         {
-            Vector3 input = new Vector3(Input.GetAxisRaw("Horizontal"),0f,Input.GetAxisRaw("Vertical"));
-            soho.Walk(input, 3.1f);
-            if (Input.GetKeyDown(KeyCode.J)) StartCoroutine(Strike(soho,slick,"Jab",.37f,1.55f, .14f));
-            if (Input.GetKeyDown(KeyCode.K)) StartCoroutine(Strike(soho,slick,"Cross",.48f,1.65f,.18f));
-            if (Input.GetKeyDown(KeyCode.L)) StartCoroutine(Strike(soho,slick,"Hook",.66f,1.65f,.30f));
-            if (Input.GetKeyDown(KeyCode.I)) StartCoroutine(Strike(soho,slick,"Uppercut",.73f,1.5f,.38f));
-            if (Input.GetKeyDown(KeyCode.U)) StartCoroutine(Strike(slick,soho,"Kick",.68f,2f,.3f));
-            if (Input.GetKeyDown(KeyCode.O)) soho.Play("Block");
+            Vector3 direction = new Vector3(Input.GetAxisRaw("Horizontal"),0,Input.GetAxisRaw("Vertical"));
+            soho.Move(direction,3f*Time.deltaTime);
+            if(Input.GetKeyDown(KeyCode.J)) StartCoroutine(Attack(soho,slick,"Jab",.40f,1.7f,.16f));
+            if(Input.GetKeyDown(KeyCode.K)) StartCoroutine(Attack(soho,slick,"Cross",.46f,1.8f,.20f));
+            if(Input.GetKeyDown(KeyCode.L)) StartCoroutine(Attack(soho,slick,"Hook",.57f,1.8f,.25f));
+            if(Input.GetKeyDown(KeyCode.I)) StartCoroutine(Attack(soho,slick,"Uppercut",.70f,1.75f,.36f));
+            if(Input.GetKeyDown(KeyCode.U)) StartCoroutine(Attack(slick,soho,"Kick",.67f,2.05f,.28f));
+            if(Input.GetKeyDown(KeyCode.O)) soho.Play("Block",.5f);
         }
+        // Character spacing is solved in the plane; feet remain on the mat (y=0).
+        Vector3 separation=slick.transform.position-soho.transform.position;
+        separation.y=0;
+        if(separation.sqrMagnitude < .60f*.60f)
+        {
+            Vector3 n=separation.sqrMagnitude>.0001f?separation.normalized:Vector3.right;
+            Vector3 center=(soho.transform.position+slick.transform.position)*.5f;
+            soho.SetPosition(center-n*.31f); slick.SetPosition(center+n*.31f);
+        }
+        Vector3 midpoint=(soho.transform.position+slick.transform.position)*.5f;
+        midpoint.y=1.18f;
+        Vector3 target=midpoint+new Vector3(0f,1.52f,-6.9f);
+        if(shake>.001f) { target+=UnityEngine.Random.insideUnitSphere*shake; shake=Mathf.MoveTowards(shake,0f,Time.deltaTime*.45f); }
+        fightCamera.transform.position=Vector3.Lerp(fightCamera.transform.position,target,Mathf.Clamp01(Time.deltaTime*4.5f));
+        fightCamera.transform.LookAt(midpoint + Vector3.up*.13f);
     }
-    private void OnDisable() { Time.timeScale = 1f; }
-    private void StartDemo(int which)
+    private void PlayDemo(int number)
     {
-        if (!ready) return;
-        if (demo != null) StopCoroutine(demo);
-        manual = false; paused = false; Time.timeScale = 1f;
-        soho.ResetAt(new Vector3(-1.18f,.05f,0f));
-        slick.ResetAt(new Vector3(1.18f,.05f,0f));
-        title = which == 1 ? "CLIP 1 / LOCK-ON BOXING" : "CLIP 2 / COMBAT SHOWCASE";
-        caption = which == 1 ? "Guard, circle, close distance and exchange punches" : "Jab - Cross - Hook - Uppercut - Knockdown - Counter-kick";
-        demo = StartCoroutine(which == 1 ? ClipOne() : ClipTwo());
+        if(sequence!=null) StopCoroutine(sequence);
+        freePlay=false; paused=false; Time.timeScale=1f;
+        soho.SetPosition(new Vector3(-1.04f,0,0)); slick.SetPosition(new Vector3(1.04f,0,0));
+        soho.ResetPose(); slick.ResetPose();
+        sceneName=number==1?"CLIP 1 / FIGHT STANCE & BOXING":"CLIP 2 / COMBO, KNOCKDOWN & KICKS";
+        status=number==1?"Soho circles, approaches and trades punches":"Jab - Jab - Hook - Uppercut - Knockdown - Slick counter-kicks";
+        sequence=StartCoroutine(number==1?ClipOne():ClipTwo());
     }
     private IEnumerator ClipOne()
     {
-        yield return new WaitForSeconds(.7f);
-        yield return Circle(.9f,1f);
-        yield return Strike(soho,slick,"Jab",.44f,1.65f,.12f);
+        yield return new WaitForSeconds(.65f);
+        yield return Circle(.95f,1f);
+        yield return Attack(soho,slick,"Jab",.43f,1.7f,.11f);
         yield return new WaitForSeconds(.22f);
-        yield return Strike(soho,slick,"Cross",.52f,1.65f,.18f);
-        yield return Circle(1.5f,-1f);
-        yield return Strike(slick,soho,"Jab",.45f,1.65f,.13f);
-        yield return Strike(soho,slick,"Hook",.65f,1.6f,.27f);
-        yield return Circle(1.2f,1f);
-        caption = "Clip 1 complete. Press 2 for the second demonstration.";
+        yield return Attack(soho,slick,"Cross",.50f,1.7f,.18f);
+        yield return Circle(1.1f,-1f);
+        yield return Attack(slick,soho,"Jab",.43f,1.7f,.12f);
+        yield return Attack(soho,slick,"Hook",.59f,1.7f,.23f);
+        status="Clip 1 finished. Press 1 to repeat, 2 for combo, P to play.";
     }
     private IEnumerator ClipTwo()
     {
-        yield return new WaitForSeconds(.75f);
-        yield return Strike(soho,slick,"Jab",.39f,1.65f,.1f);
-        yield return Strike(soho,slick,"Cross",.45f,1.65f,.16f);
-        yield return Strike(soho,slick,"Hook",.62f,1.75f,.25f);
-        yield return Strike(soho,slick,"Uppercut",.78f,1.65f,.33f);
-        yield return new WaitForSeconds(.4f);
-        slick.Play("Knockdown", 1.5f);
-        yield return new WaitForSeconds(1.6f);
-        slick.Play("GetUp",1.1f);
-        yield return new WaitForSeconds(1.3f);
-        yield return Strike(slick,soho,"Kick",.72f,2.15f,.28f);
-        yield return Strike(slick,soho,"Kick",.8f,2.15f,.31f);
-        caption = "Clip 2 complete. Press 1 to replay movement.";
+        yield return new WaitForSeconds(.6f);
+        yield return Attack(soho,slick,"Jab",.36f,1.65f,.08f);
+        yield return Attack(soho,slick,"Jab",.35f,1.65f,.08f);
+        yield return Attack(soho,slick,"Hook",.58f,1.75f,.18f);
+        yield return Attack(soho,slick,"Uppercut",.77f,1.75f,.15f);
+        slick.Play("Knockdown",1.65f);
+        yield return new WaitForSeconds(1.85f);
+        slick.Play("GetUp",1.3f);
+        yield return new WaitForSeconds(1.45f);
+        yield return Attack(slick,soho,"Kick",.65f,2.05f,.18f);
+        yield return Attack(slick,soho,"Kick",.65f,2.05f,.22f);
+        status="Clip 2 finished. Press 1 or 2 to replay. P for free play.";
     }
-    private IEnumerator Circle(float seconds, float clockwise)
+    private IEnumerator Circle(float duration,float direction)
     {
-        float elapsed=0;
-        while (elapsed < seconds)
+        float t=0f;
+        while(t<duration)
         {
-            elapsed += Time.deltaTime;
-            Vector3 separation = soho.transform.position - slick.transform.position;
-            separation.y=0;
-            if (separation.sqrMagnitude < .1f) separation = Vector3.left;
-            Vector3 tangent = Vector3.Cross(Vector3.up,separation.normalized)*clockwise;
-            soho.Walk(tangent, 1.4f);
-            slick.Walk(-tangent, .7f);
-            yield return null;
-        }
-        soho.Rest(); slick.Rest();
-    }
-    private IEnumerator Strike(HumanoidFighter attacker, HumanoidFighter defender, string move, float duration, float range, float knockback)
-    {
-        if (!ready || attacker == null || defender == null || attacker.Busy) yield break;
-        // Close just enough to deliver a plausible contact rather than striking from a distance.
-        float approach = 0f;
-        while (Vector3.Distance(attacker.transform.position,defender.transform.position) > range*.82f && approach < 1.25f)
-        {
-            approach += Time.deltaTime;
-            Vector3 delta = defender.transform.position-attacker.transform.position;
-            delta.y=0;
-            attacker.Walk(delta, 2.7f);
-            yield return null;
-        }
-        attacker.Rest(); attacker.Play(move,duration);
-        caption = attacker.DisplayName + " / " + move.ToUpperInvariant();
-        float elapsed=0f; bool checkedHit=false;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            if (!checkedHit && elapsed >= duration*.43f)
+            t+=Time.deltaTime;
+            Vector3 delta=soho.transform.position-slick.transform.position; delta.y=0;
+            if(delta.sqrMagnitude>.01f)
             {
-                checkedHit=true;
-                Vector3 delta=defender.transform.position-attacker.transform.position; delta.y=0f;
-                float dist=delta.magnitude;
-                bool facing=dist>.01f && Vector3.Dot(attacker.transform.forward,delta.normalized)>.35f;
-                if (dist <= range && facing && defender.CanBeHit)
-                {
-                    defender.TakeHit(move == "Uppercut" ? "HeavyHit" : "Hit",knockback,delta.normalized);
-                    if (cameraRig!=null) cameraRig.Impact(.07f);
-                }
-                else Debug.Log("RoughHouse V5: " + move + " missed (range or facing). Distance="+dist.ToString("F2"));
+                Vector3 tangent=Vector3.Cross(Vector3.up,delta.normalized)*direction;
+                soho.Move(tangent,1.0f*Time.deltaTime);
+                slick.Move(-tangent,.43f*Time.deltaTime);
             }
             yield return null;
         }
-        attacker.EndAttack();
     }
-    private static void MakeArena()
+    private IEnumerator Attack(RHFighter attacker,RHFighter victim,string move,float duration,float range,float push)
     {
-        var world=new GameObject("RoughHouse Arena / physical collider floor");
-        MakeCube(world.transform,"Ground", new Vector3(0,-.30f,0),new Vector3(16,.6f,12),new Color(.19f,.20f,.23f));
-        MakeCube(world.transform,"Fight mat",new Vector3(0,-.045f,0),new Vector3(9,.09f,7),new Color(.26f,.28f,.32f));
-        for (int i=-4;i<=4;i++)
-            MakeCube(world.transform,"Mat lines",new Vector3(i,.008f,0),new Vector3(.025f,.018f,6.8f),new Color(.33f,.37f,.39f));
-        for (int i=-3;i<=3;i++)
-            MakeCube(world.transform,"Mat lines",new Vector3(0,.008f,i),new Vector3(8.8f,.018f,.025f),new Color(.33f,.37f,.39f));
-        for (int i=0;i<64;i++)
+        if(attacker.IsAttacking) yield break;
+        float elapsed=0f;
+        while(Vector3.Distance(attacker.transform.position,victim.transform.position)>range*.78f && elapsed<1.15f)
         {
-            float theta=i*Mathf.PI*2f/64f;
-            float theta2=(i+1)*Mathf.PI*2f/64f;
-            Vector3 a=new Vector3(Mathf.Cos(theta)*3.6f,.025f,Mathf.Sin(theta)*2.7f);
-            Vector3 b=new Vector3(Mathf.Cos(theta2)*3.6f,.025f,Mathf.Sin(theta2)*2.7f);
-            var edge=MakeCube(world.transform,"Ring",(a+b)*.5f,new Vector3(.06f,.025f,Vector3.Distance(a,b)+.02f),new Color(.92f,.58f,.23f));
-            edge.transform.rotation=Quaternion.LookRotation(b-a);
+            elapsed+=Time.deltaTime;
+            attacker.Move(victim.transform.position-attacker.transform.position,2.4f*Time.deltaTime);
+            yield return null;
         }
-        MakeCube(world.transform,"Rear wall",new Vector3(0,3.4f,5.8f),new Vector3(16,7,.25f),new Color(.09f,.105f,.14f));
-        Light key=new GameObject("Arena lighting").AddComponent<Light>(); key.type=LightType.Directional;
-        key.transform.rotation=Quaternion.Euler(48,-35,0); key.intensity=1.6f;
-        RenderSettings.ambientLight = new Color(.52f,.54f,.62f);
+        attacker.Play(move,duration);
+        status=attacker.displayName+" / "+move.ToUpperInvariant();
+        float start=Time.time;
+        bool hit=false;
+        while(Time.time-start<duration)
+        {
+            if(!hit && Time.time-start>duration*.44f)
+            {
+                hit=true;
+                Vector3 delta=victim.transform.position-attacker.transform.position; delta.y=0;
+                bool isFacing=delta.sqrMagnitude>.01f && Vector3.Dot(attacker.transform.forward,delta.normalized)>.20f;
+                if(delta.magnitude<=range && isFacing)
+                {
+                    victim.Play(move=="Uppercut"?"HeavyHit":"Hit",.38f);
+                    victim.Move(delta,.05f+push);
+                    shake=.055f;
+                }
+            }
+            yield return null;
+        }
     }
-    private static Shader stageShader;
-    private static GameObject MakeCube(Transform parent,string name,Vector3 pos,Vector3 scale,Color color)
+    private static void CreateArena()
     {
-        GameObject obj=GameObject.CreatePrimitive(PrimitiveType.Cube);
-        obj.name=name; obj.transform.SetParent(parent,false); obj.transform.localPosition=pos; obj.transform.localScale=scale;
-        if (stageShader==null)
+        GameObject arena=new GameObject("RoughHouse Studio Fight Arena");
+        Make(PrimitiveType.Cube,"Solid concrete floor",arena.transform,new Vector3(0,-.21f,0),new Vector3(16,.42f,11),new Color(.11f,.12f,.15f));
+        Make(PrimitiveType.Cube,"Fight mat",arena.transform,new Vector3(0,-.02f,0),new Vector3(8,.045f,6),new Color(.22f,.23f,.27f));
+        for(int i=-3;i<=3;i++) Make(PrimitiveType.Cube,"Mat stripes",arena.transform,new Vector3(i,.008f,0),new Vector3(.014f,.01f,5.9f),new Color(.32f,.33f,.36f));
+        for(int i=-2;i<=2;i++) Make(PrimitiveType.Cube,"Mat stripes",arena.transform,new Vector3(0,.008f,i),new Vector3(7.9f,.01f,.014f),new Color(.32f,.33f,.36f));
+        Make(PrimitiveType.Cube,"Back wall",arena.transform,new Vector3(0,3.3f,5.5f),new Vector3(16,6.6f,.2f),new Color(.065f,.075f,.11f));
+        for(int i=-3;i<=3;i++)
         {
-            stageShader=Resources.Load<Shader>("RoughHouseFlatColor");
-            if(stageShader==null) stageShader=Shader.Find("Sprites/Default");
+            Make(PrimitiveType.Cube,"Light strip",arena.transform,new Vector3(i*1.9f,3.3f,5.34f),new Vector3(.035f,3.9f,.04f),new Color(.2f,.43f,.53f));
         }
-        if(stageShader != null)
-        {
-            var m=new Material(stageShader); m.color=color; obj.GetComponent<MeshRenderer>().sharedMaterial=m;
-        }
-        return obj; // Unity's primitive BoxCollider remains enabled.
+        Light main=new GameObject("Key Light").AddComponent<Light>(); main.type=LightType.Directional; main.intensity=1.65f; main.transform.rotation=Quaternion.Euler(48,-25,0);
+        RenderSettings.ambientLight=new Color(.56f,.58f,.64f);
+    }
+    internal static GameObject Make(PrimitiveType type,string name,Transform parent,Vector3 localPosition,Vector3 localScale,Color color)
+    {
+        GameObject obj=GameObject.CreatePrimitive(type);
+        obj.name=name; obj.transform.SetParent(parent,false);
+        obj.transform.localPosition=localPosition; obj.transform.localScale=localScale;
+        Shader shader=Resources.Load<Shader>("RoughHouseFlatColor");
+        if(shader==null) shader=Shader.Find("Unlit/Color");
+        if(shader!=null) { var material=new Material(shader); material.color=color; var renderer=obj.GetComponent<Renderer>(); renderer.sharedMaterial=material; }
+        return obj;
     }
     private void OnGUI()
     {
-        if(heading==null)
+        if(titleStyle==null)
         {
-            heading=new GUIStyle(GUI.skin.label) {fontSize=25,fontStyle=FontStyle.Bold,normal={textColor=Color.white}};
-            body=new GUIStyle(GUI.skin.label) {fontSize=15,normal={textColor=new Color(.72f,.91f,.96f)}};
-            warning=new GUIStyle(GUI.skin.label) {fontSize=17,wordWrap=true,normal={textColor=new Color(1f,.60f,.3f)}};
+            titleStyle=new GUIStyle(GUI.skin.label); titleStyle.fontSize=22; titleStyle.fontStyle=FontStyle.Bold; titleStyle.normal.textColor=Color.white;
+            textStyle=new GUIStyle(GUI.skin.label); textStyle.fontSize=14; textStyle.normal.textColor=new Color(.77f,.92f,.95f);
         }
-        GUI.Box(new Rect(18,18,Mathf.Min(750,Screen.width-36),140),"");
-        GUI.Label(new Rect(32,29,700,34),title,heading);
-        GUI.Label(new Rect(32,67,700,35),caption,ready?body:warning);
-        GUI.Label(new Rect(32,116,730,30),"[1] Clip 1    [2] Clip 2    [P] Free play    [Space] Pause",body);
+        GUI.Box(new Rect(15,15,Mathf.Min(730,Screen.width-30),128),"");
+        GUI.Label(new Rect(29,23,690,30),"ROUGH HOUSE  |  "+sceneName,titleStyle);
+        GUI.Label(new Rect(29,59,690,26),status,textStyle);
+        GUI.Label(new Rect(29,100,690,28),"[1] Boxing clip    [2] Combo clip    [P] Free play    [Space] Pause",textStyle);
     }
 }
 
-public sealed class HumanoidFighter : MonoBehaviour
+// Self-contained human-proportioned male mesh actor. Not mocap and not photorealistic.
+public sealed class RHFighter : MonoBehaviour
 {
-    public HumanoidFighter Opponent;
-    public string DisplayName { get; private set; }
-    public bool Valid { get; private set; }
-    public bool Busy { get { return Time.time < busyUntil; } }
-    public bool CanBeHit { get { return Time.time > groundedUntil; } }
-    private CharacterController controller;
-    private Animator animator;
-    private Transform visual;
-    private float busyUntil,groundedUntil;
-    private Vector3 home;
-    private bool moved;
-    private string lastState;
-    public static HumanoidFighter Spawn(string name,GameObject prefab,Vector3 position)
+    public RHFighter enemy;
+    public string displayName;
+    public bool IsAttacking { get { return Time.time < actionEnd && (action=="Jab"||action=="Cross"||action=="Hook"||action=="Uppercut"||action=="Kick"); } }
+    private Transform body,head,leftArm,rightArm,leftForearm,rightForearm,leftLeg,rightLeg,leftShin,rightShin;
+    private float actionEnd,actionStart,actionDuration,seed;
+    private string action="Idle";
+    private float speedMotion;
+    private bool boxStyle;
+    private Vector3 restLocalBody;
+    public static RHFighter Create(string fighterName,bool isBoxer,Vector3 spawn)
     {
-        var root=new GameObject(name+" / human fighter / collision root");
-        root.transform.position=position;
-        var cc=root.AddComponent<CharacterController>(); cc.center=new Vector3(0, .93f,0); cc.height=1.86f; cc.radius=.32f; cc.skinWidth=.045f; cc.stepOffset=.23f;
-        cc.slopeLimit=45f;
-        var fighter=root.AddComponent<HumanoidFighter>(); fighter.DisplayName=name; fighter.controller=cc; fighter.home=position;
-        GameObject model=Instantiate(prefab,root.transform); model.name=name+" / skinned human model";
-        fighter.visual=model.transform;
-        fighter.animator=model.GetComponentInChildren<Animator>();
-        if(fighter.animator != null)
-        {
-            fighter.animator.applyRootMotion=false;
-            fighter.Valid=fighter.animator.runtimeAnimatorController!=null;
-        }
-        // Scale feet to the mat without altering colliders or the world y coordinate.
-        var renderers=model.GetComponentsInChildren<Renderer>();
-        if(renderers.Length>0)
-        {
-            float feet=float.PositiveInfinity;
-            foreach(var renderer in renderers) feet=Mathf.Min(feet,renderer.bounds.min.y);
-            if(!float.IsInfinity(feet)) model.transform.position += Vector3.up*(position.y-feet+.015f);
-        }
-        fighter.Play("Idle");
-        return fighter;
+        GameObject root=new GameObject(fighterName+" / male fighter");
+        root.transform.position=spawn;
+        // Runtime colliders keep the fighter's physical volume explicit.
+        CapsuleCollider capsule=root.AddComponent<CapsuleCollider>(); capsule.center=new Vector3(0,1.03f,0); capsule.height=2.05f; capsule.radius=.33f;
+        RHFighter f=root.AddComponent<RHFighter>(); f.displayName=fighterName; f.boxStyle=isBoxer;
+        f.seed=isBoxer?0f:1.2f;
+        f.Build(isBoxer);
+        return f;
     }
-    private void Update()
+    private static Transform Pivot(Transform parent,string name,Vector3 local)
     {
-        if(Opponent!=null)
-        {
-            Vector3 delta=Opponent.transform.position-transform.position; delta.y=0;
-            if(delta.sqrMagnitude>.025f)
-                transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(delta),720f*Time.deltaTime);
-        }
-        if(controller!=null && controller.enabled)
-        {
-            if(!controller.isGrounded) controller.Move(Vector3.down * 5f * Time.deltaTime);
-            // CharacterControllers do not automatically collide with one another. Resolve separation explicitly.
-            if(Opponent != null)
-            {
-                Vector3 d=transform.position-Opponent.transform.position; d.y=0;
-                if(d.sqrMagnitude>.0001f && d.magnitude<.78f)
-                    controller.Move(d.normalized*(.78f-d.magnitude)*.5f);
-            }
-        }
-        if(moved) { moved=false; }
+        GameObject p=new GameObject(name); p.transform.SetParent(parent,false); p.transform.localPosition=local;
+        return p.transform;
     }
-    public void Walk(Vector3 direction,float speed)
+    private static void Shape(Transform parent,string name,PrimitiveType shape,Vector3 local,Vector3 size,Color color)
     {
-        if(Busy || controller==null || !controller.enabled) return;
+        GameObject part=RoughHousePrototype.Make(shape,name,parent,local,size,color);
+        Collider c=part.GetComponent<Collider>(); if(c!=null) Destroy(c);
+    }
+    private void Build(bool boxer)
+    {
+        Color skin=boxer?new Color(.64f,.42f,.28f):new Color(.31f,.20f,.15f);
+        Color top=boxer?new Color(.13f,.15f,.18f):new Color(.50f,.14f,.18f);
+        Color shorts=boxer?new Color(.18f,.24f,.28f):new Color(.17f,.17f,.24f);
+        Color glove=boxer?new Color(.80f,.20f,.13f):new Color(.10f,.58f,.68f);
+        Color shoe=new Color(.075f,.085f,.09f); Color hair=boxer?new Color(.12f,.09f,.07f):new Color(.09f,.055f,.035f);
+        body=Pivot(transform,"Hips and chest",new Vector3(0,1.14f,0));
+        Shape(body,"Muscular torso",PrimitiveType.Capsule,new Vector3(0,.31f,0),new Vector3(.72f,.69f,.37f),top);
+        Shape(body,"Shoulders",PrimitiveType.Capsule,new Vector3(0,.52f,0),new Vector3(.94f,.23f,.41f),top);
+        Shape(body,"Waist / trunks",PrimitiveType.Cube,new Vector3(0,-.11f,0),new Vector3(.57f,.35f,.40f),shorts);
+        Shape(body,"Neck",PrimitiveType.Cylinder,new Vector3(0,.72f,0),new Vector3(.18f,.20f,.18f),skin);
+        head=Pivot(body,"Head",new Vector3(0,.90f,0));
+        Shape(head,"Male head",PrimitiveType.Sphere,new Vector3(0,.10f,0),new Vector3(.37f,.47f,.33f),skin);
+        Shape(head,"Hair",PrimitiveType.Sphere,new Vector3(0,.31f,-.012f),new Vector3(.37f,.14f,.33f),hair);
+        Shape(head,"Nose",PrimitiveType.Cube,new Vector3(0,.105f,.176f),new Vector3(.08f,.12f,.11f),skin);
+        for(int side=-1;side<=1;side+=2)
+        {
+            Shape(head,"Eye",PrimitiveType.Sphere,new Vector3(side*.09f,.17f,.159f),new Vector3(.06f,.035f,.035f),Color.white);
+            Shape(head,"Pupil",PrimitiveType.Sphere,new Vector3(side*.09f,.17f,.188f),new Vector3(.026f,.027f,.018f),new Color(.06f,.07f,.08f));
+            Shape(head,"Brow",PrimitiveType.Cube,new Vector3(side*.09f,.225f,.168f),new Vector3(.14f,.025f,.03f),hair);
+        }
+        leftArm=Pivot(body,"Left shoulder",new Vector3(-.42f,.55f,0));
+        rightArm=Pivot(body,"Right shoulder",new Vector3(.42f,.55f,0));
+        BuildArm(leftArm,"Left",skin,glove); BuildArm(rightArm,"Right",skin,glove);
+        leftForearm=leftArm.Find("Left elbow"); rightForearm=rightArm.Find("Right elbow");
+        leftLeg=Pivot(transform,"Left hip",new Vector3(-.19f,1.02f,0));
+        rightLeg=Pivot(transform,"Right hip",new Vector3(.19f,1.02f,0));
+        BuildLeg(leftLeg,"Left",skin,shorts,shoe); BuildLeg(rightLeg,"Right",skin,shorts,shoe);
+        leftShin=leftLeg.Find("Left knee");rightShin=rightLeg.Find("Right knee");
+        restLocalBody=body.localPosition;
+    }
+    private static void BuildArm(Transform shoulder,string name,Color skin,Color glove)
+    {
+        float sign=name=="Left"?-1f:1f;
+        Shape(shoulder,name+" upper arm",PrimitiveType.Capsule,new Vector3(sign*.055f,-.24f,0),new Vector3(.23f,.46f,.24f),skin);
+        Transform elbow=Pivot(shoulder,name+" elbow",new Vector3(sign*.08f,-.47f,0));
+        Shape(elbow,name+" forearm",PrimitiveType.Capsule,new Vector3(0,-.19f,0),new Vector3(.21f,.39f,.22f),skin);
+        Shape(elbow,name+" Boxing glove",PrimitiveType.Sphere,new Vector3(0,-.39f,.035f),new Vector3(.29f,.27f,.32f),glove);
+    }
+    private static void BuildLeg(Transform hip,string name,Color skin,Color trunks,Color shoe)
+    {
+        Shape(hip,name+" shorts",PrimitiveType.Capsule,new Vector3(0,-.15f,0),new Vector3(.32f,.34f,.34f),trunks);
+        Shape(hip,name+" thigh",PrimitiveType.Capsule,new Vector3(0,-.36f,0),new Vector3(.27f,.50f,.29f),skin);
+        Transform knee=Pivot(hip,name+" knee",new Vector3(0,-.62f,0));
+        Shape(knee,name+" shin",PrimitiveType.Capsule,new Vector3(0,-.30f,0),new Vector3(.22f,.56f,.23f),skin);
+        Shape(knee,name+" foot",PrimitiveType.Cube,new Vector3(0,-.54f,.10f),new Vector3(.29f,.17f,.49f),shoe);
+    }
+    public void SetPosition(Vector3 p) { p.y=0; p.x=Mathf.Clamp(p.x,-3.35f,3.35f);p.z=Mathf.Clamp(p.z,-2.55f,2.55f);transform.position=p; }
+    public void Move(Vector3 direction,float distance)
+    {
         direction.y=0;
-        if(direction.sqrMagnitude>.001f)
-        {
-            direction.Normalize();
-            Vector3 candidate=transform.position+direction*speed*Time.deltaTime;
-            if(Mathf.Abs(candidate.x)>4f || Mathf.Abs(candidate.z)>3f) return;
-            controller.Move(direction*speed*Time.deltaTime);
-            Play("Walk"); moved=true;
-        }
-        else Rest();
+        if(direction.sqrMagnitude<.0005f)return;
+        direction.Normalize(); SetPosition(transform.position+direction*distance);
+        speedMotion=1f;
     }
-    public void Rest() { if(!Busy) Play("Idle"); }
-    public void EndAttack() { busyUntil=0f; lastState=null; Play("Idle"); }
-    public void Play(string state,float lockSeconds=0f)
+    public void Play(string name,float seconds)
     {
-        if(animator==null || animator.runtimeAnimatorController==null) return;
-        if(!animator.HasState(0,Animator.StringToHash("Base Layer."+state)) && !animator.HasState(0,Animator.StringToHash(state)))
-        {
-            Debug.LogWarning("RoughHouse V5: missing humanoid animation state '"+state+"' for "+DisplayName);
-            return;
-        }
-        if(lastState != state) animator.CrossFadeInFixedTime(state,.10f,0,0f);
-        lastState=state;
-        busyUntil=Mathf.Max(busyUntil,Time.time+lockSeconds);
+        action=name; actionStart=Time.time; actionDuration=Mathf.Max(.08f,seconds);actionEnd=actionStart+actionDuration;
     }
-    public void TakeHit(string state,float push,Vector3 away)
-    {
-        Play(state,state=="HeavyHit"?.62f:.3f);
-        if(controller!=null) controller.Move(away*push);
-        if(state=="HeavyHit") groundedUntil=Time.time+.4f;
-    }
-    public void ResetAt(Vector3 pos)
-    {
-        controller.enabled=false; transform.position=pos; controller.enabled=true;
-        busyUntil=groundedUntil=0f; lastState=null; Play("Idle");
-    }
-}
-
-public sealed class FightCamera : MonoBehaviour
-{
-    private Transform first,second;
-    private Vector3 velocity;
-    private float impulse;
-    public void SetTargets(Transform a,Transform b) {first=a;second=b;}
-    public void Impact(float amount) {impulse=Mathf.Max(impulse,amount);}
+    public void ResetPose() { action="Idle"; actionEnd=0; speedMotion=0; body.localPosition=restLocalBody; }
     private void LateUpdate()
     {
-        if(first==null || second==null) return;
-        Vector3 mid=(first.position+second.position)*.5f;
-        float gap=Vector3.Distance(first.position,second.position);
-        Vector3 desired=mid+new Vector3(0,2.65f,-Mathf.Clamp(5.7f+gap*.45f,6.2f,8.5f));
-        transform.position=Vector3.SmoothDamp(transform.position,desired,ref velocity,.16f);
-        if(impulse>0f) { transform.position+=UnityEngine.Random.insideUnitSphere*impulse; impulse=Mathf.MoveTowards(impulse,0,Time.deltaTime*.5f); }
-        transform.LookAt(mid+Vector3.up*1.1f);
+        if(enemy!=null)
+        {
+            Vector3 delta=enemy.transform.position-transform.position; delta.y=0;
+            if(delta.sqrMagnitude>.01f) transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(delta.normalized),Mathf.Clamp01(Time.deltaTime*13f));
+        }
+        float t=Time.time;
+        float n=Mathf.Sin(t*4.2f+seed);
+        // A guarded male boxing stance, foot weight transfer and breathing.
+        body.localPosition=restLocalBody+new Vector3(0,.017f*n,0);
+        body.localRotation=Quaternion.Euler(-3f+1.8f*n,0,Mathf.Sin(t*2.1f+seed)*2f);
+        leftArm.localRotation=Quaternion.Euler(-48f,0,-22f);
+        rightArm.localRotation=Quaternion.Euler(-58f,0,22f);
+        leftForearm.localRotation=Quaternion.Euler(-78f,0,0);
+        rightForearm.localRotation=Quaternion.Euler(-80f,0,0);
+        leftLeg.localRotation=Quaternion.Euler(4f+Mathf.Sin(t*3f)*2f,0,-4f);
+        rightLeg.localRotation=Quaternion.Euler(-4f-Mathf.Sin(t*3f)*2f,0,5f);
+        leftShin.localRotation=Quaternion.Euler(4f,0,0);
+        rightShin.localRotation=Quaternion.Euler(5f,0,0);
+        head.localRotation=Quaternion.Euler(-4f,0,0);
+        if(Time.time<=actionEnd)
+        {
+            float u=Mathf.Clamp01((t-actionStart)/actionDuration);
+            float strike=Mathf.Sin(Mathf.PI*Mathf.Pow(u,.75f));
+            if(action=="Jab") {leftArm.localRotation=Quaternion.Euler(-48f-93f*strike,0,-22f+16f*strike);leftForearm.localRotation=Quaternion.Euler(-78f+74f*strike,0,0);body.localRotation*=Quaternion.Euler(0,-8f*strike,0);}
+            else if(action=="Cross") {rightArm.localRotation=Quaternion.Euler(-58f-92f*strike,0,22f-15f*strike);rightForearm.localRotation=Quaternion.Euler(-80f+75f*strike,0,0);body.localRotation*=Quaternion.Euler(0,18f*strike,0);}
+            else if(action=="Hook") {rightArm.localRotation=Quaternion.Euler(-100f*strike-58f,60f*strike,22f-44f*strike);rightForearm.localRotation=Quaternion.Euler(-80f+50f*strike,0,0);body.localRotation*=Quaternion.Euler(0,27f*strike,0);}
+            else if(action=="Uppercut") {rightArm.localRotation=Quaternion.Euler(-58f+44f*strike,0,22f);rightForearm.localRotation=Quaternion.Euler(-80f-23f*strike,0,0);body.localRotation*=Quaternion.Euler(-14f*strike,18f*strike,0);}
+            else if(action=="Kick") {rightLeg.localRotation=Quaternion.Euler(-4f-95f*strike,0,5f);rightShin.localRotation=Quaternion.Euler(5f+70f*strike,0,0);body.localRotation*=Quaternion.Euler(13f*strike,-12f*strike,0);}
+            else if(action=="Hit"||action=="HeavyHit") {body.localRotation*=Quaternion.Euler(17f*strike,0,10f*strike);head.localRotation=Quaternion.Euler(23f*strike,0,0);}
+            else if(action=="Block") {leftArm.localRotation=Quaternion.Euler(-115f,0,-28f);rightArm.localRotation=Quaternion.Euler(-115f,0,28f);}
+            else if(action=="Knockdown") { float fall=Mathf.SmoothStep(0,1,Mathf.Clamp01(u*3f));body.localRotation=Quaternion.Euler(-80f*fall,0,0);body.localPosition=restLocalBody+new Vector3(0,-.72f*fall,-.38f*fall);leftLeg.localRotation=Quaternion.Euler(42f*fall,0,0);rightLeg.localRotation=Quaternion.Euler(-45f*fall,0,0); }
+            else if(action=="GetUp") {float rise=Mathf.SmoothStep(0,1,u);body.localRotation=Quaternion.Euler(-80f*(1-rise),0,0);body.localPosition=restLocalBody+new Vector3(0,-.72f*(1-rise),-.38f*(1-rise));}
+        }
+        else if(action=="Knockdown") {body.localRotation=Quaternion.Euler(-80f,0,0);body.localPosition=restLocalBody+new Vector3(0,-.72f,-.38f);}
+        else { action="Idle"; }
+        speedMotion=Mathf.MoveTowards(speedMotion,0f,Time.deltaTime*3f);
     }
 }

@@ -1,11 +1,9 @@
-# RoughHouse V5 Unity Cloud Build
+# RoughHouse V6 build instructions
 
-Windows Build Automation configuration: platform Windows desktop x86-64, Unity 6000.3.x, Git branch `master`, project root blank, same as successful v4 build.
+Unity 6000.3.x, Build Automation target Windows desktop 64-bit, branch `master`, Unity project subfolder empty. The scene `Assets/RoughHouse/Scenes/Combat_Test_Arena.unity` is included in `ProjectSettings/EditorBuildSettings.asset`.
 
-**IMPORTANT: Unlike V4, V5 intentionally refuses to build without real humanoid models and all 12 animation files.** Otherwise the result would mislead by producing another successful executable without fighters.
+V6 removes FBX-gating build hooks. If applying V6 to the existing V5.1 GitHub repository **delete the two old editor files** from GitHub Desktop as well as replacing source files:
+- `Assets/RoughHouse/Editor/RoughHouseCloudAssets.cs`
+- `Assets/RoughHouse/Editor/RoughHouseHumanSetup.cs`
 
-Add real FBX assets at the exact paths in `ASSET_REQUIREMENTS.txt`; the `RoughHouseCloudAssets` editor script imports model humanoid rigs and generates two human prefabs + Animator controllers before the cloud build. The character source and clips must be compatible; mismatched bones/clip contents require adjustment in Unity Editor.
-
-Character and animation resources are not included in this ZIP. Use the linked CC0 sources or other licensed FBX models. Download manually and verify usage rights.
-
-After committing assets to Git, run a NEW build. If a BuildFailedException says an asset is missing, upload it at the required path. When cloud compilation succeeds, download the artifact and inspect gameplay; do not assume successful compilation implies acceptable fighter choreography.
+A successful export is not runtime validation. Test the freshly downloaded executable, controls 1 and 2, floor and collisions, and `Player.log` before client presentation. Do not describe generated screenshots as real game footage.

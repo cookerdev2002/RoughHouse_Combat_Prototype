@@ -1,50 +1,28 @@
-# RoughHouse V5 — Real Human Fighter Rebuild
+# RoughHouse V6 – self-contained playable combat prototype
 
-**Status: reconstructed Unity project/source package. Requires REAL rigged human FBX models and animation clips before a Windows build. Not yet compiled or play-tested.**
+This Unity 6.3 source is intended for the existing Windows Cloud Build pipeline. It includes **two male human-proportioned procedural fighters**, a physical arena floor, close-range fighting choreography, camera follow, combat contact/range tests, recoil and hit response, and a keyboard-controlled clip showcase.
 
-The existing V4 project constructs fighters from scaled spheres and rotates them by hand. V5 removes the stick-figure renderer and introduces a human FBX / Unity Animator architecture, grounded CharacterController movement, collision separation, reach-checked strikes, basic hit reactions, ring camera and two demo sequences.
+**Honest delivery status:** The character meshes are stylized originals assembled from Unity primitives; animation is **procedural**, not motion-captured, and this is **not a realistic/photorealistic human fighting game**. There are no unlicensed character assets or fake FBX files. A client expecting realistic models/animation will still require licensed rigged male characters, retargeted motion-capture, animation blending, animation-event hitboxes, and quality assurance. Build and gameplay have not been tested with the Unity editor in this environment.
 
-## Fastest option: GitHub + Unity Cloud Build, without local Unity Editor
+## Running
 
-1. Obtain two **licensed, rigged human models**, in FBX format. They must include humanoid skeleton bones, skinning and avatar-compatible bone layout.
-2. Save the models using these EXACT names/paths in your GitHub repository:
-   - `Assets/RoughHouse/Imported/Characters/Soho.fbx`
-   - `Assets/RoughHouse/Imported/Characters/Slick.fbx`
-3. Obtain **12 real FBX animation clips** that use a compatible humanoid rig and contain baked animation. The actual name of the internal animation take does not matter, but the FILE name must match:
-   - `Assets/RoughHouse/Imported/Animations/Idle.fbx`
-   - `Walk.fbx`, `Jab.fbx`, `Cross.fbx`, `Hook.fbx`, `Uppercut.fbx`, `Kick.fbx`, `Hit.fbx`, `HeavyHit.fbx`, `Knockdown.fbx`, `GetUp.fbx`, `Block.fbx` (all in the same Animations folder).
-4. Include any legally distributable accompanying textures/materials and `.meta` files when available. Commit all updated project files to GitHub branch `master`.
-5. Start **a new Unity Cloud Windows build**. The editor importer attempts Humanoid rig import and the pre-build setup generates `Resources/Fighters/Soho.prefab`, `Slick.prefab`, and two Animator controllers automatically. The build stops early with an explicit error if the FBX assets are missing, instead of producing a successful but empty game.
-6. Download the new Windows artifact, run it and check frame-by-frame contacts, Avatar mapping, foot-floor offset, fighter scale and stance. Rigged model orientation and clip import often require manual retargeting/tuning; an automatic import cannot guarantee realistic results for arbitrary FBX assets.
+1. Extract the ZIP **contents** into the existing `RoughHouse_Combat_Prototype` repository (replace matching files).
+2. Crucial: delete old `Assets/RoughHouse/Editor/RoughHouseCloudAssets.cs` and `RoughHouseHumanSetup.cs` from the Git repository. (They were removed from this package but copying over an old repo doesn't delete them.)
+3. Commit and push `master` in GitHub Desktop.
+4. Start a NEW Unity Cloud Windows 64-bit Build Automation build on `master`.
+5. Download artifacts, extract the complete Windows player, launch it and inspect gameplay.
 
-## Alternative: configure models visually with Unity Editor
+## Game controls
 
-Open Unity 6000.3.x, import models and clips, choose **Rig > Animation Type > Humanoid** for each FBX, and use menu **RoughHouse > Configure Human Fighters**. Assign both character models and 12 clip slots; click GENERATE BOTH HUMAN FIGHTERS. Commit generated assets and original source FBX files. The GitHub-only auto importer may regenerate the controllers during cloud build when the standard folder names are present.
+- `1` – boxing/circling showcase
+- `2` – jab, jab, hook, uppercut, knockdown, recovery and kicks
+- `P` – free-play mode
+- `WASD` – movement in free-play
+- `J/K/L/I` – jab / cross / hook / uppercut
+- `U` – Slick kick
+- `O` – guard
+- `Space` – pause/resume
 
-## Suggested CC0 sources (download separately)
+## Important limitations
 
-- Quaternius Universal Base Characters: https://quaternius.com/packs/universalbasecharacters.html
-- Quaternius Universal Animation Library: https://quaternius.com/packs/universalanimationlibrary.html
-
-These are stylized/low-poly human assets and will not look photoreal. For photoreal human faces, materials and high-quality choreographed striking, choose appropriate character models and motion-capture animation clips. The licensing of any source assets must be checked before publication.
-
-## Implemented in the V5 code
-
-- No sphere-and-stick model construction; requires two genuine humanoid models.
-- Physical floor colliders; grounded capsule controllers; fighter separation and constrained arena movement.
-- Close-range choreography, attacks with range and directional checks, pushback, and reaction animations.
-- Fighting stance, boxing punches, kicks, knockdown and recovery through real Animator clips.
-- Fight camera follows the participants more closely.
-- `[1]` lock-on / circling demo, `[2]` combo demo, `[P]` free play, `[Space]` pause; WASD movement and J/K/L/I/U attacks, O block.
-
-## Known limitations
-
-- Exact mocap clip selection and retargeting are not automatic; FBX imports with incompatible skeletons may fail or animate badly.
-- No motion blending trees, correct foot IK, or animation-event-authored hit windows yet.
-- Character collision uses CharacterController + scripted separation, not full ragdoll simulation.
-- Knockdown and get-up currently play clips; advanced synchronized fight animation needs authoring and careful timing.
-- The editor has not been executed in this environment. Unity compilation and actual runtime must be verified on the next cloud build.
-
-
-## V5.1 compilation fix
-The Unity 6 built-in Animation module (`com.unity.modules.animation`: `1.0.0`) has been explicitly enabled in `Packages/manifest.json` to resolve CS1069 for `UnityEngine.Animator`. Both Soho and Slick are intended to be male humanoid models; actual licensed character FBX files are not bundled. Cloud builds still require both imported male character assets and the 12 animation FBX files described in ASSET_REQUIREMENTS.txt.
+This is an intermediate playable prototype intended to replace earlier broken or asset-blocked builds, **not a client-ready realistic fighting game**. The user must test the generated Windows executable; the source was inspected and packaged but not compiled or played in Unity here. The implementation intentionally uses two visible male-styled characters with more human proportion and authored fight poses, not the previous sphere-stick fighters, but low-complexity meshes remain visible. Ground contact is enforced by a planar mover and spacing solver; gameplay does not have robust rigidbody dynamics, animation warping, IK foot placement or motion capture.
