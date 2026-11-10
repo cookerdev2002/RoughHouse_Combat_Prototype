@@ -1,0 +1,29 @@
+ROUGH HOUSE V5: ACTUAL HUMANOID ASSETS REQUIRED
+
+This ZIP includes all V5 Unity source changes but NO third-party human FBX models
+or motion-capture files. You must source and upload the real assets before building.
+
+Recommended starting points (CC0):
+https://quaternius.com/packs/universalbasecharacters.html
+https://quaternius.com/packs/universalanimationlibrary.html
+
+GitHub paths:
+Assets/RoughHouse/Imported/Characters/Soho.fbx
+Assets/RoughHouse/Imported/Characters/Slick.fbx
+Assets/RoughHouse/Imported/Animations/Idle.fbx
+Assets/RoughHouse/Imported/Animations/Walk.fbx
+Assets/RoughHouse/Imported/Animations/Jab.fbx
+Assets/RoughHouse/Imported/Animations/Cross.fbx
+Assets/RoughHouse/Imported/Animations/Hook.fbx
+Assets/RoughHouse/Imported/Animations/Uppercut.fbx
+Assets/RoughHouse/Imported/Animations/Kick.fbx
+Assets/RoughHouse/Imported/Animations/Hit.fbx
+Assets/RoughHouse/Imported/Animations/HeavyHit.fbx
+Assets/RoughHouse/Imported/Animations/Knockdown.fbx
+Assets/RoughHouse/Imported/Animations/GetUp.fbx
+Assets/RoughHouse/Imported/Animations/Block.fbx
+
+Save renamed FBX files with these filenames. An FBX must contain actual animation
+curves, not just a skeleton. Simply renaming a random file will not make the
+correct move. Rig proportions, skin weights, retargeting and animation quality
+still require visual review in a Unity Editor.

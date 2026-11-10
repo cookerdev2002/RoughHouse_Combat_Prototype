@@ -1,28 +1,11 @@
-# RoughHouse Unity cloud build (Windows desktop)
+# RoughHouse V5 Unity Cloud Build
 
-This is the first untested **source prototype**, not a verified EXE. Unlike the original ZIP, this edition automatically generates the demo scene on first Unity Editor import and adds it to Build Settings. You do not have to click any menu in the Unity Editor.
+Windows Build Automation configuration: platform Windows desktop x86-64, Unity 6000.3.x, Git branch `master`, project root blank, same as successful v4 build.
 
-## Upload to GitHub
+**IMPORTANT: Unlike V4, V5 intentionally refuses to build without real humanoid models and all 12 animation files.** Otherwise the result would mislead by producing another successful executable without fighters.
 
-1. Extract this archive. The repository root should contain `Assets`, `Packages`, and `ProjectSettings` (not the surrounding `RoughHouse_Combat_Prototype` folder).
-2. On GitHub create a **private** repository (`roughhouse-combat-prototype`). Upload every source item from the extracted project folder using GitHub's **Add file > Upload files**, or use Git. Keep the directory paths intact. **Do not upload** Library, Temp, Logs, Obj, or build outputs. Ensure GitHub shows `Assets/RoughHouse/Scripts/RoughHousePrototype.cs`, `Assets/RoughHouse/Editor/RoughHouseSceneSetup.cs`, `Packages/manifest.json`, `ProjectSettings/ProjectVersion.txt`.
-3. Visit https://cloud.unity.com/ and create/select a Unity Cloud Project. Open DevOps > Build Automation. Follow the on-screen onboarding for subscription/trial and source control.
-4. Connect GitHub and authorize repository access. Choose the repo above, branch `main`.
-5. Create a build configuration: **Windows Desktop / Windows Standalone**, **x86_64**, Unity **6000.3.28f1** (Unity 6.3 LTS) if available. Use a compatible version if that precise editor is not offered, and adjust ProjectVersion accordingly. Project subfolder is blank when Assets/ is at repository root. Disable automatic build triggers while testing.
-6. Run **Build**. The Editor importer should generate the scene and register it for the build. If your provider reports no scenes, inspect build logs and ensure the `RoughHouseSceneSetup` editor script compiled and its delayed initializer ran. In that case, generate and commit the scene using a local Unity Editor; an automated build may not call initialization reliably in every configuration.
-7. Once successful, download and extract the complete Windows artifact; keep `RoughHouse.exe` alongside its `_Data` folder and Unity runtime DLLs.
+Add real FBX assets at the exact paths in `ASSET_REQUIREMENTS.txt`; the `RoughHouseCloudAssets` editor script imports model humanoid rigs and generates two human prefabs + Animator controllers before the cloud build. The character source and clips must be compatible; mismatched bones/clip contents require adjustment in Unity Editor.
 
-## Controls
+Character and animation resources are not included in this ZIP. Use the linked CC0 sources or other licensed FBX models. Download manually and verify usage rights.
 
-Startup runs Clip 1 automatically; **2** = Clip 2, **1** = restart Clip 1, **P** = manual/free play, **WASD** movement, **J/K/L/I** attacks, **U** Slick kick, **Space** pause.
-
-## Important
-
-- **No actual video is bundled.** Record the running EXE using OBS or Windows screen recording.
-- The procedural character visuals and poses are **temporary placeholders**, not client-approved final character art.
-- **Not compiled or tested in Unity yet.** Cloud failures can arise from Unity API compatibility, input settings, package resolution, or scene generation. Review cloud build logs before client delivery.
-- The game is a prototype, not the completed commissioned combat game. Test Clip 1 and Clip 2 on a real Windows PC before claiming completion.
-
-
-## V3 cloud build correction
-The repository now includes `Assets/RoughHouse/Scenes/Combat_Test_Arena.unity` and `ProjectSettings/EditorBuildSettings.asset`. Commit **both** to GitHub. This avoids the previous `There were no scenes configured to build` failure caused by relying on automatic scene creation.
+After committing assets to Git, run a NEW build. If a BuildFailedException says an asset is missing, upload it at the required path. When cloud compilation succeeds, download the artifact and inspect gameplay; do not assume successful compilation implies acceptable fighter choreography.

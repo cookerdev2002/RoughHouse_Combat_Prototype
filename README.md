@@ -1,65 +1,46 @@
-# ROUGH HOUSE — Unity Combat Prototype
+# RoughHouse V5 — Real Human Fighter Rebuild
 
-**Prototype source package for the client's first two short combat videos.**
+**Status: reconstructed Unity project/source package. Requires REAL rigged human FBX models and animation clips before a Windows build. Not yet compiled or play-tested.**
 
-This is a real, editable Unity C# project scaffold, not an exported Windows game and not recorded gameplay. The package generates a functional **code-driven combat visualization** with procedural stylized placeholder fighters (not final approved character art). It has **not been opened, compiled, or playtested in Unity in this environment**. On first opening, Unity may upgrade packages, ask you to switch the API/input settings or show version-specific warnings; follow the checks below.
+The existing V4 project constructs fighters from scaled spheres and rotates them by hand. V5 removes the stick-figure renderer and introduces a human FBX / Unity Animator architecture, grounded CharacterController movement, collision separation, reach-checked strikes, basic hit reactions, ring camera and two demo sequences.
 
-## Quick start on Windows 11
+## Fastest option: GitHub + Unity Cloud Build, without local Unity Editor
 
-1. Install **Unity Hub** and **Unity 6 Editor**. Prefer Unity `6000.0.50f1` (the version recorded in ProjectVersion.txt), or another compatible Unity 6 version.
-2. Extract this ZIP to a normal local folder, such as `C:\UnityProjects\RoughHouse_Combat_Prototype`.
-3. In Unity Hub select **Add project from disk** and choose the extracted project folder.
-4. Open the project using the **3D built-in render pipeline**. The materials in this package use the built-in `Standard` shader. If Hub asks to pick a template instead, simply open the extracted project as-is rather than creating a separate URP project.
-5. If the editor asks about **Input Handling**, choose `Both` or `Input Manager (Old)`. The prototype uses `UnityEngine.Input`.
-6. In the main menu choose **RoughHouse → Generate Combat Demo Scene**. This saves `Assets/RoughHouse/Scenes/Combat_Test_Arena.unity` and adds it to Build Settings.
-7. Click **Play**. Clip 1 runs automatically. Switch to the **Game** tab to see the fighters and HUD.
-8. Use the hotkeys below and capture gameplay using OBS Studio or a screen recorder after testing.
+1. Obtain two **licensed, rigged human models**, in FBX format. They must include humanoid skeleton bones, skinning and avatar-compatible bone layout.
+2. Save the models using these EXACT names/paths in your GitHub repository:
+   - `Assets/RoughHouse/Imported/Characters/Soho.fbx`
+   - `Assets/RoughHouse/Imported/Characters/Slick.fbx`
+3. Obtain **12 real FBX animation clips** that use a compatible humanoid rig and contain baked animation. The actual name of the internal animation take does not matter, but the FILE name must match:
+   - `Assets/RoughHouse/Imported/Animations/Idle.fbx`
+   - `Walk.fbx`, `Jab.fbx`, `Cross.fbx`, `Hook.fbx`, `Uppercut.fbx`, `Kick.fbx`, `Hit.fbx`, `HeavyHit.fbx`, `Knockdown.fbx`, `GetUp.fbx`, `Block.fbx` (all in the same Animations folder).
+4. Include any legally distributable accompanying textures/materials and `.meta` files when available. Commit all updated project files to GitHub branch `master`.
+5. Start **a new Unity Cloud Windows build**. The editor importer attempts Humanoid rig import and the pre-build setup generates `Resources/Fighters/Soho.prefab`, `Slick.prefab`, and two Animator controllers automatically. The build stops early with an explicit error if the FBX assets are missing, instead of producing a successful but empty game.
+6. Download the new Windows artifact, run it and check frame-by-frame contacts, Avatar mapping, foot-floor offset, fighter scale and stance. Rigged model orientation and clip import often require manual retargeting/tuning; an automatic import cannot guarantee realistic results for arbitrary FBX assets.
 
-## Keyboard controls
+## Alternative: configure models visually with Unity Editor
 
-| Input | Action |
-|---|---|
-| `1` | Restart Clip 1 (circling / jab / hit reactions) |
-| `2` | Restart Clip 2 (combo / launch / crumple / knockdown / OTG / kicks) |
-| `Space` | Pause / resume |
-| `P` | Toggle scripted demo / free-play input |
-| `W A S D` | Move Soho in free play (fighter keeps facing Slick) |
-| `J` | Soho left jab |
-| `K` | Soho right jab |
-| `L` | Soho hook |
-| `I` | Soho uppercut (launch) |
-| `U` | Slick's counter kick |
+Open Unity 6000.3.x, import models and clips, choose **Rig > Animation Type > Humanoid** for each FBX, and use menu **RoughHouse > Configure Human Fighters**. Assign both character models and 12 clip slots; click GENERATE BOTH HUMAN FIGHTERS. Commit generated assets and original source FBX files. The GitHub-only auto importer may regenerate the controllers during cloud build when the standard folder names are present.
 
-For smooth capture set Game view to 16:9, e.g. 1920 × 1080, and use the Editor's **Maximize On Play** option.
+## Suggested CC0 sources (download separately)
 
-## What this prototype contains
+- Quaternius Universal Base Characters: https://quaternius.com/packs/universalbasecharacters.html
+- Quaternius Universal Animation Library: https://quaternius.com/packs/universalanimationlibrary.html
 
-- Two **procedurally assembled original placeholder 3D fighters**, named **Soho** and **Slick**.
-- Simple low-poly arena with boundary markings, lighting and contrasting backdrops.
-- Scripted fighting stance, circular lock-on movement, two-character following camera and camera impact shake.
-- Soho jabs, hook and uppercut; opponent hit, airborne launch, crumple, ground impact and recovery poses.
-- Slick quick and spinning/tricking-style kick motions.
-- Scripted demo timelines; alternate free-play keyboard mode.
-- On-screen demo labels and recording shortcuts.
+These are stylized/low-poly human assets and will not look photoreal. For photoreal human faces, materials and high-quality choreographed striking, choose appropriate character models and motion-capture animation clips. The licensing of any source assets must be checked before publication.
 
-## Important limitations / quality gates
+## Implemented in the V5 code
 
-These procedural 3D models are **not final approved Soho or Slick models**: the provided client text gives character personalities and fighting styles but no approved concept art or mesh references. Movements are **procedural pose animation**, not motion-captured or hand-keyed final animation. The demo has no genuine hitbox/hurtbox collision, frame data, network play, health system, sound effects, audio, custom skinned meshes or production animation controller. For real clips, verify body motion/spacing in Unity and adjust the script as needed. The hit reaction is timed to the scripted swing rather than contact physics. Do not claim final polished combat is complete based solely on this scaffold.
+- No sphere-and-stick model construction; requires two genuine humanoid models.
+- Physical floor colliders; grounded capsule controllers; fighter separation and constrained arena movement.
+- Close-range choreography, attacks with range and directional checks, pushback, and reaction animations.
+- Fighting stance, boxing punches, kicks, knockdown and recovery through real Animator clips.
+- Fight camera follows the participants more closely.
+- `[1]` lock-on / circling demo, `[2]` combo demo, `[P]` free play, `[Space]` pause; WASD movement and J/K/L/I/U attacks, O block.
 
-The project **does not include an MP4**. A real gameplay video requires running the Unity scene on a computer with the Editor/renderer available and recording it.
+## Known limitations
 
-## Proposed client approval steps
-
-1. **Milestone A: Clip 1** — confirm a 20–30 second fight-stance/circling/camera/hit-reaction clip.
-2. **Milestone B: Clip 2** — confirm the jab → jab → hook → uppercut launch, crumple, grounded hit, knockdown/get-up and Slick fast kicks.
-3. **Art polish** — replace placeholder bodies with approved rigged Soho/Slick models, proper animations, VFX, SFX and any brand-specific stage assets.
-4. **Final handoff** — the Unity project and all newly created/licensed assets, plus actual recorded combat clips.
-
-## Project files
-
-- `Assets/RoughHouse/Scripts/RoughHousePrototype.cs` — stage creation, procedural character geometry, pose animations, camera, clip director, inputs, HUD.
-- `Assets/RoughHouse/Editor/RoughHouseSceneSetup.cs` — one-click Unity Editor setup menu.
-- `Assets/RoughHouse/Scenes` — generated scene is saved here when the Editor setup menu runs.
-- `Packages/manifest.json` and `ProjectSettings/ProjectVersion.txt` — project compatibility metadata.
-
-No third-party asset downloads or license claims are included; graphics are generated from standard Unity primitives and C#.
+- Exact mocap clip selection and retargeting are not automatic; FBX imports with incompatible skeletons may fail or animate badly.
+- No motion blending trees, correct foot IK, or animation-event-authored hit windows yet.
+- Character collision uses CharacterController + scripted separation, not full ragdoll simulation.
+- Knockdown and get-up currently play clips; advanced synchronized fight animation needs authoring and careful timing.
+- The editor has not been executed in this environment. Unity compilation and actual runtime must be verified on the next cloud build.
