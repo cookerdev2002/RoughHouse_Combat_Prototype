@@ -19,6 +19,8 @@ public class RoughHousePrototype : MonoBehaviour
     private float clock;
     private GUIStyle titleStyle, smallStyle, bigStyle;
 
+    private bool initialized;
+
     private void Start()
     {
         Application.targetFrameRate = 60;
@@ -30,11 +32,14 @@ public class RoughHousePrototype : MonoBehaviour
         soho.FacingTarget = slick.transform;
         slick.FacingTarget = soho.transform;
         CreateCamera();
+        initialized = true;
         StartClip(1);
+        Debug.Log("RoughHouse: Arena, fighters, materials and camera initialized successfully.");
     }
 
     private void Update()
     {
+        if (!initialized) return;
         clock += Time.deltaTime;
         if (Input.GetKeyDown(KeyCode.Alpha1)) StartClip(1);
         if (Input.GetKeyDown(KeyCode.Alpha2)) StartClip(2);
@@ -65,6 +70,7 @@ public class RoughHousePrototype : MonoBehaviour
 
     private void StartClip(int clip)
     {
+        if (!initialized || soho == null || slick == null) return;
         if (sequence != null) StopCoroutine(sequence);
         manual = false;
         paused = false;
@@ -212,6 +218,27 @@ public class RoughHousePrototype : MonoBehaviour
         foreach (var go in GameObject.FindGameObjectsWithTag("Respawn")) go.SetActive(false);
     }
 
+    private static Shader cachedCombatShader;
+    public static Material CreateColorMaterial(Color color)
+    {
+        // Resources ensures the shader is included in a Windows player build even
+        // when no authored material references it and Standard is stripped.
+        if (cachedCombatShader == null)
+        {
+            cachedCombatShader = Resources.Load<Shader>("RoughHouseFlatColor");
+            if (cachedCombatShader == null)
+            {
+                Debug.LogError("RoughHouse: Resources/RoughHouseFlatColor.shader missing from player build.");
+                cachedCombatShader = Shader.Find("Sprites/Default");
+            }
+            if (cachedCombatShader == null)
+                throw new InvalidOperationException("RoughHouse has no available display shader; verify the bundled Resources shader.");
+        }
+        Material result = new Material(cachedCombatShader);
+        result.color = color;
+        return result;
+    }
+
     private static Color ColorAt(float r,float g,float b) { return new Color(r,g,b); }
     public static GameObject MakeBox(Transform parent, string name, Vector3 pos, Vector3 scale, Color color)
     {
@@ -221,8 +248,7 @@ public class RoughHousePrototype : MonoBehaviour
         g.transform.localPosition = pos;
         g.transform.localScale = scale;
         var mr = g.GetComponent<MeshRenderer>();
-        mr.material = new Material(Shader.Find("Standard"));
-        mr.material.color = color;
+        mr.sharedMaterial = CreateColorMaterial(color);
         // Collider components are unnecessary for the visual-only prototype.
         // Avoid a hard PhysicsModule dependency in Unity Cloud builds.
         return g;
@@ -355,8 +381,7 @@ public class Fighter : MonoBehaviour
         g.transform.localPosition=pos;
         g.transform.localScale=scale;
         MeshRenderer renderer=g.GetComponent<MeshRenderer>();
-        renderer.material=new Material(Shader.Find("Standard"));
-        renderer.material.color=color;
+        renderer.sharedMaterial=RoughHousePrototype.CreateColorMaterial(color);
         // Collider components are unnecessary for the visual-only prototype.
         // Avoid a hard PhysicsModule dependency in Unity Cloud builds.
         return g;

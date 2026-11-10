@@ -1,0 +1,14 @@
+RoughHouse v4 / Runtime black-screen fix
+
+Root cause from Player.log: Shader.Find("Standard") was null in player and Material(null) threw during CreateArena. Start() exited early, so fighters and camera were never created.
+
+Changes:
+- Added Assets/Resources/RoughHouseFlatColor.shader: included with standalone player by Resources location.
+- Both procedural cubes and spheres now use cached Resources.Load<Shader>("RoughHouseFlatColor") via CreateColorMaterial.
+- Added explicit fallback and diagnostic instead of Material(null).
+- Added initialized guard to prevent repeated NullReferenceExceptions when Start fails.
+- Logs successful arena/fighter/camera initialization.
+
+Install: Copy Assets folder into existing repo, commit, push master, start a NEW cloud build.
+Check new Player.log for 'RoughHouse: Arena, fighters, materials and camera initialized successfully.'
+Not Unity-player tested in this environment; successful cloud build and runtime test still required.
