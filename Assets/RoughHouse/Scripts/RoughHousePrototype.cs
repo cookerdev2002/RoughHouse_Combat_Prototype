@@ -260,6 +260,9 @@ public sealed class RHFighter : MonoBehaviour
         rightArm=Pivot(body,"Right shoulder",new Vector3(.42f,.55f,0));
         BuildArm(leftArm,"Left",skin,glove); BuildArm(rightArm,"Right",skin,glove);
         leftForearm=leftArm.Find("Left elbow"); rightForearm=rightArm.Find("Right elbow");
+        // Hip/knee/ankle positions are calibrated for a floor whose top is y ~= 0.013.
+        // Keep the fighter root at y=0: moving the whole actor upward would also raise
+        // hit zones and produce visibly floating feet during the combat sequence.
         leftLeg=Pivot(transform,"Left hip",new Vector3(-.19f,1.02f,0));
         rightLeg=Pivot(transform,"Right hip",new Vector3(.19f,1.02f,0));
         BuildLeg(leftLeg,"Left",skin,shorts,shoe); BuildLeg(rightLeg,"Right",skin,shorts,shoe);
@@ -276,11 +279,19 @@ public sealed class RHFighter : MonoBehaviour
     }
     private static void BuildLeg(Transform hip,string name,Color skin,Color trunks,Color shoe)
     {
+        // Ground reference: top of the visible arena stripes is y=0.013.
+        // Hip y=1.02, knee y=1.02-0.55=0.47, shoe centre y=0.47-0.38=0.09.
+        // Shoe half-height=0.075, so the soles land at y=0.015, just above the mat.
+        // Old V6 knee (-0.62) and foot (-0.54) placed the shoes UNDER the floor.
         Shape(hip,name+" shorts",PrimitiveType.Capsule,new Vector3(0,-.15f,0),new Vector3(.32f,.34f,.34f),trunks);
-        Shape(hip,name+" thigh",PrimitiveType.Capsule,new Vector3(0,-.36f,0),new Vector3(.27f,.50f,.29f),skin);
-        Transform knee=Pivot(hip,name+" knee",new Vector3(0,-.62f,0));
-        Shape(knee,name+" shin",PrimitiveType.Capsule,new Vector3(0,-.30f,0),new Vector3(.22f,.56f,.23f),skin);
-        Shape(knee,name+" foot",PrimitiveType.Cube,new Vector3(0,-.54f,.10f),new Vector3(.29f,.17f,.49f),shoe);
+        Shape(hip,name+" thigh",PrimitiveType.Capsule,new Vector3(0,-.27f,0),new Vector3(.27f,.50f,.29f),skin);
+        Transform knee=Pivot(hip,name+" knee",new Vector3(0,-.55f,0));
+        Shape(knee,name+" shin",PrimitiveType.Capsule,new Vector3(0,-.21f,0),new Vector3(.22f,.44f,.23f),skin);
+        Shape(knee,name+" ankle wrap",PrimitiveType.Cylinder,new Vector3(0,-.33f,0),new Vector3(.23f,.075f,.23f),trunks);
+        Shape(knee,name+" visible boot",PrimitiveType.Cube,new Vector3(0,-.38f,.16f),new Vector3(.32f,.15f,.52f),shoe);
+        Shape(knee,name+" boot toe",PrimitiveType.Sphere,new Vector3(0,-.39f,.38f),new Vector3(.32f,.13f,.22f),shoe);
+        // Sole is a separately coloured strip and never starts below the floor.
+        Shape(knee,name+" boot sole",PrimitiveType.Cube,new Vector3(0,-.449f,.17f),new Vector3(.33f,.014f,.53f),new Color(.25f,.26f,.28f));
     }
     public void SetPosition(Vector3 p) { p.y=0; p.x=Mathf.Clamp(p.x,-3.35f,3.35f);p.z=Mathf.Clamp(p.z,-2.55f,2.55f);transform.position=p; }
     public void Move(Vector3 direction,float distance)
@@ -311,10 +322,11 @@ public sealed class RHFighter : MonoBehaviour
         rightArm.localRotation=Quaternion.Euler(-58f,0,22f);
         leftForearm.localRotation=Quaternion.Euler(-78f,0,0);
         rightForearm.localRotation=Quaternion.Euler(-80f,0,0);
-        leftLeg.localRotation=Quaternion.Euler(4f+Mathf.Sin(t*3f)*2f,0,-4f);
-        rightLeg.localRotation=Quaternion.Euler(-4f-Mathf.Sin(t*3f)*2f,0,5f);
-        leftShin.localRotation=Quaternion.Euler(4f,0,0);
-        rightShin.localRotation=Quaternion.Euler(5f,0,0);
+        // Keep feet near mat height when idle; larger leg rotations are attack-only.
+        leftLeg.localRotation=Quaternion.Euler(1.5f+Mathf.Sin(t*3f)*.7f,0,-2f);
+        rightLeg.localRotation=Quaternion.Euler(-1.5f-Mathf.Sin(t*3f)*.7f,0,2f);
+        leftShin.localRotation=Quaternion.Euler(0,0,0);
+        rightShin.localRotation=Quaternion.Euler(0,0,0);
         head.localRotation=Quaternion.Euler(-4f,0,0);
         if(Time.time<=actionEnd)
         {

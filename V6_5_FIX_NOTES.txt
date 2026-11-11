@@ -1,0 +1,12 @@
+ROUGH HOUSE V6.5 — FOOT PLACEMENT & OLD V5 VALIDATION FIX
+
+- Fixes the original knee/shin/shoe placement which buried footwear below the mat.
+- Adds visible boots, rounded toes, ankle wraps and soles to BOTH male fighters.
+- Reduces idle leg angular motion to minimise foot-floor clipping.
+- Retains collision spacing and existing fighting sequences.
+- Overwrites obsolete V5 build-blocker scripts so Soho.fbx and Slick.fbx are no longer required.
+- Package preserves the existing scene, shader and Unity build settings.
+
+IMPORTANT: This is a procedural, stylised prototype, NOT photorealistic fighters.
+Static source/ZIP checks were performed, but Unity compilation and runtime playtest
+are NOT available in this environment and must be verified in Cloud Build.

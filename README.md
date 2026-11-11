@@ -29,3 +29,16 @@ This is an intermediate playable prototype intended to replace earlier broken or
 
 ## V6.1 module correction
 Explicitly enables Unity built-in Audio, IMGUI and legacy Input modules for the camera listener, GUI overlay and keyboard controls. Compiling in Unity Cloud and runtime validation are still pending.
+
+
+## V6.5 Foot Grounding Patch
+
+Both fighters now have explicitly visible boots and soles. The new leg positions are
+calculated against the existing arena mat height (top of striping approximately 0.013
+units). On the default standing pose, boot soles sit approximately 0.014 units
+above the reference floor rather than beneath it. This is mesh placement, not
+foot IK; dramatic kick/knockdown poses may still cause temporary penetration.
+
+Replace the ZIP **contents** into the root of your existing GitHub repository.
+This package also overwrites the TWO obsolete V5 editor scripts with safe stubs.
+Push the entire set of changed files to master before initiating a new cloud build.
